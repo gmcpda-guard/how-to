@@ -1,0 +1,94 @@
+Create a raid5 with 4 disks using mdadm
+
+
+
+1. Identify the target disks
+List block devices and confirm sizes and existing partitions.
+
+lsblk -o NAME,SIZE,TYPE,FSTYPE,MOUNTPOINT
+
+Assume the four disks are:
+/dev/sdc
+/dev/sdd
+/dev/sde
+/dev/sdf
+
+Ensure none are mounted and none contain data you need.
+
+2. (Recommended) Wipe existing RAID metadata
+This avoids conflicts with prior arrays.
+
+mdadm --zero-superblock /dev/sdc /dev/sdd /dev/sde /dev/sdf
+
+
+Optionally clear partition tables:
+wipefs -a /dev/sdb /dev/sdc /dev/sdd /dev/sde
+
+3. Create the RAID 5 array
+Create /dev/md0 with four devices.
+
+mdadm --create /dev/md0 \
+  --level=5 \
+  --raid-devices=4 \
+  /dev/sdc /dev/sdd /dev/sde /dev/sdf
+
+
+Confirm when prompted.
+
+4. Monitor array build
+Initial synchronization will begin immediately.
+
+watch cat /proc/mdstat
+
+Detailed status:
+mdadm --detail /dev/md0
+
+
+You may use the array before the sync completes, though performance will be reduced.
+
+5. Create a filesystem
+Example with ext4 (use xfs if preferred).
+
+mkfs.ext4 /dev/md0
+
+6. Create mount point and mount
+mkdir -p /mnt/raid5
+mount /dev/md0 /mnt/raid5
+
+
+Verify:
+df -h /mnt/raid5
+
+7. Persist mdadm configuration
+
+Ensure the array assembles at boot.
+
+Debian/Ubuntu:
+
+mdadm --detail --scan >> /etc/mdadm/mdadm.conf
+update-initramfs -u
+
+
+RHEL/CentOS/Rocky/Alma:
+
+mdadm --detail --scan >> /etc/mdadm.conf
+dracut -H -f
+
+8. Persist mount in /etc/fstab
+Use the array UUID (recommended).
+
+blkid /dev/md0
+
+Add to /etc/fstab:
+UUID=<md0-uuid>  /mnt/raid5  ext4  defaults,nofail  0  2
+
+Test:
+umount /mnt/raid5
+mount -a
+
+Notes and best practices
+* Use identical disk sizes for optimal capacity and performance.
+* RAID 5 tolerates one disk failure.
+* Monitor SMART data and mdadm alerts.
+* Keep regular backups; RAID is not a backup strategy.
+
