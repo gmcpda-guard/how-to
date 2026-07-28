@@ -1,4 +1,4 @@
-source: https://gist.github.com/qin-yu/bc26a2d280ee2e93b2d7860a1bfbd0c5#file-configure-git-md
+* source: https://gist.github.com/qin-yu/bc26a2d280ee2e93b2d7860a1bfbd0c5#file-configure-git-md
 
 # How to configure Git and setup GitHub on new machine <!-- omit in toc -->
 
