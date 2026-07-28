@@ -1,22 +1,23 @@
-How to Create a RAID 5 Array with mdadm
+# How to Create a RAID 5 Array with mdadm
 This guide walks through creating a Linux software RAID 5 array using mdadm. It assumes you're comfortable with the terminal and have at least three empty disks available.
 
 Example disks used throughout: /dev/sdb, /dev/sdc, and /dev/sdd
 
 Replace these with your actual device names.
 
-Before You Begin
+# Before You Begin
 RAID 5 warning
 RAID 5 provides redundancy, not a backup.
 
-Keep these points in mind:
+# Keep these points in mind:
 
 Creating a RAID array erases all data on the selected disks.
 RAID 5 can survive one disk failure.
 If a second disk fails before the first is rebuilt, the array is lost.
 Large modern drives can take many hours (or even days) to rebuild, increasing the risk of another failure during that time.
 Always keep important data backed up somewhere else.
-Step 1 — Install mdadm
+
+# Step 1 — Install mdadm
 Debian/Ubuntu:
 
 sudo apt update
@@ -28,7 +29,7 @@ sudo dnf install mdadm
 
 This installs the Linux software RAID management tools.
 
-Step 2 — Identify Your Drives
+# Step 2 — Identify Your Drives
 List all storage devices:
 
 lsblk -o NAME,SIZE,FSTYPE,MOUNTPOINT
@@ -45,7 +46,7 @@ Example:
 /dev/sdc
 /dev/sdd
 
-Step 3 — Verify the Drives Are Not Mounted
+# Step 3 — Verify the Drives Are Not Mounted
 Check:
 
 lsblk
@@ -58,14 +59,14 @@ sudo umount /dev/sdd1
 
 Replace the partition names with your own if necessary.
 
-Step 4 — (Optional but Recommended) Wipe Existing RAID Metadata
+# Step 4 — (Optional but Recommended) Wipe Existing RAID Metadata
 If the disks have been used before:
 
 sudo mdadm --zero-superblock /dev/sdb /dev/sdc /dev/sdd
 
 If the command reports there was no RAID metadata, that's fine.
 
-Step 5 — Create the RAID 5 Array
+# Step 5 — Create the RAID 5 Array
 sudo mdadm \
   --create /dev/md0 \
   --level=5 \
@@ -83,7 +84,7 @@ Type:
 
 yes
 
-Step 6 — Watch the Array Build
+# Step 6 — Watch the Array Build
 Immediately check its status:
 
 cat /proc/mdstat
@@ -99,7 +100,7 @@ D
 DigitalOcean
 +1
 
-Step 7 — Verify Array Details
+# Step 7 — Verify Array Details
 sudo mdadm --detail /dev/md0
 
 This displays:
@@ -109,21 +110,22 @@ member disks
 UUID
 rebuild status
 health
-Step 8 — Create a Filesystem
+
+# Step 8 — Create a Filesystem
 Format the new array with ext4:
 
 sudo mkfs.ext4 /dev/md0
 
 This prepares the RAID array for storing files.
 
-Step 9 — Create a Mount Point
+# Step 9 — Create a Mount Point
 Example:
 
 sudo mkdir -p /mnt/storage
 
 This is where the filesystem will appear.
 
-Step 10 — Mount the Array
+# Step 10 — Mount the Array
 sudo mount /dev/md0 /mnt/storage
 
 Check:
@@ -138,7 +140,7 @@ mounted at:
 
 /mnt/storage
 
-Step 11 — Save the RAID Configuration
+# Step 11 — Save the RAID Configuration
 Wait until the initial synchronization has completed, then save the array definition:
 
 cat /proc/mdstat
@@ -158,7 +160,7 @@ D
 DigitalOcean
 +1
 
-Step 12 — Update the Initramfs (Debian/Ubuntu)
+# Step 12 — Update the Initramfs (Debian/Ubuntu)
 sudo update-initramfs -u
 
 This includes the updated RAID configuration in the early boot environment so the array assembles correctly at startup. 
@@ -166,7 +168,7 @@ D
 DigitalOcean
 +1
 
-Step 13 — Configure Automatic Mounting
+# Step 13 — Configure Automatic Mounting
 Find the filesystem UUID:
 
 sudo blkid /dev/md0
@@ -187,7 +189,7 @@ Replace the UUID with the one from your system.
 
 Using the filesystem UUID is generally more robust than relying on a device name like /dev/md0, which can change in some situations.
 
-Step 14 — Test the Configuration
+# Step 14 — Test the Configuration
 Unmount:
 
 sudo umount /mnt/storage
@@ -202,7 +204,7 @@ df -h
 
 No errors means your fstab entry is valid.
 
-Step 15 — Reboot Test
+# Step 15 — Reboot Test
 Reboot:
 
 sudo reboot
@@ -235,9 +237,8 @@ lsblk
 df -h
 
 A healthy array should:
-
-show all expected member disks
-report the RAID state as clean or active
-have no failed devices
-be mounted at your chosen mount point
+* show all expected member disks
+* report the RAID state as clean or active
+* have no failed devices
+* be mounted at your chosen mount point
 Once these checks pass, your RAID 5 array is ready for use.
