@@ -1,2 +1,154 @@
 source: https://gist.github.com/qin-yu/bc26a2d280ee2e93b2d7860a1bfbd0c5#file-configure-git-md
 
+# How to configure Git and setup GitHub on new machine <!-- omit in toc -->
+
+By [Qin Yu](https://github.com/qin-yu), last updated in March 2026. I hope this helped both human and AI.
+
+* [First-Time Git Setup](#first-time-git-setup)
+  * [Three config files of different levels](#three-config-files-of-different-levels)
+  * [Use terminal to set identity and editor](#use-terminal-to-set-identity-and-editor)
+* [Connect to GitHub with SSH](#connect-to-github-with-ssh)
+* [How to really commit in the past with Git for GitHub](#how-to-really-commit-in-the-past-with-git-for-github)
+* [How to reflect the actual authorship](#how-to-reflect-the-actual-authorship)
+* [References](#references)
+
+## First-Time Git Setup
+
+### Three config files of different levels
+
+Git uses three configuration levels, each overriding the previous one:
+
+| Scope            | File                                     |
+| ---------------- | ---------------------------------------- |
+| system level     | `/etc/gitconfig`                         |
+| user level       | `~/.gitconfig` or `~/.config/git/config` |
+| repository level | `[repository]/.git/config`               |
+
+To view all active settings and where they are coming from:
+
+```bash
+git config --list --show-origin
+```
+
+This should print nothing if `git` has not been used.
+
+### Use terminal to set identity and editor
+
+1. Set Git name and email
+
+    ```bash
+    git config --global user.name "John Doe"
+    git config --global user.email "johndoe@example.com"
+    ```
+
+    If you want to override this with a different name or email address for specific projects, run the command without the `--global` option when you’re in that project directory.
+
+2. Set Git editor
+    Now set `emacs` as the default editor:
+
+    ```bash
+    git config --global core.editor emacs
+    ```
+
+    If not configured, Git defaults to your system editor.
+
+3. Set colour
+    Also, enable coloured output in terminals:
+
+    ```bash
+    git config --global color.ui true
+    ```
+
+## Connect to GitHub with SSH
+
+1. Check keys to reuse
+
+    List existing SSH keys:
+
+    ```bash
+    ls -alhF ~/.ssh/
+    ```
+
+    If no files like `~/.ssh/id_rsa` and `~/.ssh/id_rsa.pub` are found, then:
+
+2. Generate key pair
+
+    ```bash
+    ssh-keygen -t rsa -b 4096 -C "your_email@example.com"
+    ```
+
+3. Add key to ssh-agent
+
+    ```bash
+    eval "$(ssh-agent -s)"
+    ssh-add ~/.ssh/id_rsa
+    ```
+
+    If you are using a Mac, use `ssh-add --apple-use-keychain ~/.ssh/id_rsa`.
+
+4. Paste public key to GitHub
+
+    i.e. copy the content of `~/.ssh/id_rsa.pub` into GitHub -> Personal Settings -> SSH and GPG keys -> New SSH Key
+
+5. **Test connection**
+
+    ```bash
+    ssh -T git@github.com
+    ```
+
+## How to really commit in the past with Git for GitHub
+
+The three keys are the argument `--date` and two environment variables: `GIT_AUTHOR_DATE` and `GIT_COMMITTER_DATE`.
+
+```bash
+GIT_AUTHOR_DATE="2024-01-01T00:00:00" GIT_COMMITTER_DATE="2024-01-01T00:00:00" git commit --date="2024-01-01T00:00:00"
+```
+
+You can view the last modification timestamp using:
+
+```bash
+ls -lv --time-style="+%Y-%m-%dT%H:%M:%S"
+```
+
+I recommend my favourite alias for `ll`:
+
+```bash
+$ alias ll='ls -ahlv --color=auto --group-directories-first --time-style="+%Y-%m-%dT%H:%M:%S"'
+$ ll
+
+total 4220
+...
+drwxr-sr-x   8 qyu hpc-088    4096 2024-02-01T18:51:03  datasets
+drwx------   6 qyu hpc-088    4096 2024-02-05T20:24:59  downloads
+drwxr-sr-x   2 qyu hpc-088    4096 2022-05-03T22:31:54  environments
+...
+```
+
+To avoid pasting three times, I added another alias to `~/.bashrc`:
+
+```bash
+alias gitpast='f(){ GIT_AUTHOR_DATE="$1" GIT_COMMITTER_DATE="$1" git commit --date="$1"; }; f'
+```
+
+Then, I can commit in the past with a single command:
+
+```bash
+gitpast "2024-01-01T00:00:00"
+```
+
+## How to reflect the actual authorship
+
+I believe that whoever discovered a bug or proposed the fix should be credited as the author of the commit, even if they were not the person who actually made the commit. To reflect the actual authorship:
+
+```bash
+$ git commit -m "fix(ci): example
+>
+> Co-authored-by: GITHUB-USER <HELPFUL_DUDE@EXAMPLE.COM>
+> Co-authored-by: ANOTHER-HELPFUL-PERSON <ANOTHER-HELPFUL-PERSON@EXAMPLE.COM>"
+```
+
+## References
+
+* [1.6 Getting Started - First-Time Git Setup](https://git-scm.com/book/en/v2/Getting-Started-First-Time-Git-Setup)
+* [Generating a new SSH key and adding it to the ssh-agent](https://help.github.com/en/github/authenticating-to-github/generating-a-new-ssh-key-and-adding-it-to-the-ssh-agent)
+* [Testing your SSH connection](https://help.github.com/en/github/authenticating-to-github/testing-your-ssh-connection)
